@@ -67,5 +67,23 @@ fn main() -> anyhow::Result<()> {
         module: &shader,
         entry_point: "grayscale_main",
     });
-    
+
+    let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("Texture bind group"),
+        layout: &pipeline.get_bind_group_layout(0),
+        entries: &{
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(
+                    &input_texture.create_view(&wgpu::TextureViewDescriptor::default()),
+                ),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::TextureView(
+                    &output_texture.create_view(&wgpu::TextureViewDescriptor::default()),
+                ),
+            },
+        },
+    });
 }
