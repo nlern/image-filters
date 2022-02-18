@@ -1,6 +1,7 @@
 fn main() -> anyhow::Result<()> {
     use pollster::FutureExt;
 
+    // create device, queue
     let instance = wgpu::Instance::new(wgpu::Backends::all());
     let adapter = instance
         .request_adapter(&wgpu::RequestAdapterOptionsBase {
@@ -14,5 +15,7 @@ fn main() -> anyhow::Result<()> {
         .request_device(&Default::default(), None)
         .block_on()?;
 
-    
+    // load image
+    let input_image = image::load_from_memory(include_bytes!("sushi.png"))?.to_rgba8();
+    let (width, height) = input_image.dimensions();
 }
