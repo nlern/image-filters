@@ -56,5 +56,16 @@ fn main() -> anyhow::Result<()> {
         usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::STORAGE_BINDING,
     });
 
+    let shader = device.create_shader_module(&wgpu::ShaderModuleDescriptor {
+        label: Some("Grayscale shader"),
+        source: wgpu::ShaderSource::Wgsl(include_str!("shaders/grayscale.wgsl").into()),
+    });
+
+    let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+        label: Some("Grayscale pipeline"),
+        layout: None,
+        module: &shader,
+        entry_point: "grayscale_main",
+    });
     
 }
