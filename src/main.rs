@@ -89,6 +89,15 @@ fn main() -> anyhow::Result<()> {
 
     let mut encoder =
         device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+    let (dispatch_width, dispatch_height) =
+        compute_work_group_count((texture_size.width, texture_size.height), (16, 16));
+    let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
+        label: Some("Grayscale Pass"),
+    });
+    compute_pass.set_pipeline(&pipeline);
+    compute_pass.set_bind_group(0, &texture_bind_group, &[]);
+    compute_pass.dispatch(dispatch_width, dispatch_height, 1);
 }
 
 fn compute_work_group_count(
