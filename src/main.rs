@@ -98,6 +98,27 @@ fn main() -> anyhow::Result<()> {
     compute_pass.set_pipeline(&pipeline);
     compute_pass.set_bind_group(0, &texture_bind_group, &[]);
     compute_pass.dispatch(dispatch_width, dispatch_height, 1);
+
+    let padded_bytes_per_row = padded_bytes_per_row(width);
+    let unpadded_bytes_per_row = width as usize * 4;
+    
+    encoder.copy_texture_to_buffer(
+        wgpu::ImageCopyTexture {
+            aspect: wgpu::TextureAspect::All,
+            texture: &output_texture,
+            mip_level: 0,
+            origin: wgpu::Origin3d::ZERO,
+        },
+        wgpu::ImageCopyBuffer {
+            buffer:&output_buffer,
+            layout: wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: std::num::NonZeroU32::new(padded_bytes_per_row as u32),
+                rows_per_image: std::num::NonZeroU32::new(height),
+            },
+        },
+        texture_size,
+    );
 }
 
 fn compute_work_group_count(
@@ -108,4 +129,11 @@ fn compute_work_group_count(
     let y = (height + workgroup_height - 1) / workgroup_height;
 
     (x, y)
+}
+
+// Compute the next multiple of 256 for textual retreival padding
+fn padded_bytes_per_row(width: u32) -> usize {
+    let bytes_per_row = width as usize *4;
+    let padding = (256 - bytes_per_row % 256) % 256;
+    bytes_per_row + padding
 }
