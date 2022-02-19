@@ -71,7 +71,7 @@ fn main() -> anyhow::Result<()> {
     let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Texture bind group"),
         layout: &pipeline.get_bind_group_layout(0),
-        entries: &{
+        entries: &[
             wgpu::BindGroupEntry {
                 binding: 0,
                 resource: wgpu::BindingResource::TextureView(
@@ -84,7 +84,7 @@ fn main() -> anyhow::Result<()> {
                     &output_texture.create_view(&wgpu::TextureViewDescriptor::default()),
                 ),
             },
-        },
+        ],
     });
 
     let mut encoder =
@@ -130,8 +130,30 @@ fn main() -> anyhow::Result<()> {
         },
         texture_size,
     );
-
     queue.submit(Some(encoder.finish()));
+
+    let buffer_slice = output_buffer.slice(..);
+    let mapping = buffer_slice.map_async(wgpu::MapMode::Read);
+
+    device.poll(wgpu::Maintain::Wait);
+    mapping.block_on()?;
+
+    let padded_data = buffer_slice.get_mapped_range();
+
+    let mut pixels: Vec<u8> = vec![0; unpadded_bytes_per_row * height as usize];
+    for (padded, pixels) in padded_data
+        .chunks_exact(padded_bytes_per_row)
+        .zip(pixels.chunks_exact_mut(unpadded_bytes_per_row))
+    {
+        pixels.copy_from_slice(&padded[..unpadded_bytes_per_row]);
+    }
+
+    if let Some(output_image) = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(width, height, &pixels[..])
+    {
+        output_image.save("sushi_grayscale.png")?;
+    }
+
+    Ok(())
 }
 
 fn compute_work_group_count(
